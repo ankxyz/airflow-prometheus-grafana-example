@@ -1,0 +1,1 @@
+apache-airflow[postgres,crypto,statsd]==1.10.10

@@ -1,0 +1,69 @@
+version: "3.5"
+
+services:
+
+  postgres:
+    image: postgres:12.2
+    environment:
+      POSTGRES_USER: "airflow"
+      POSTGRES_PASSWORD: "airflow"
+      POSTGRES_DB: "airflow"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    container_name: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgres/ps_data:/var/lib/postgresql/data
+
+  airflow:
+    build: ./airflow
+    image: prometheus-airlfow:latest
+    restart: always
+    environment:
+      AIRFLOW_HOME: /home/airflow
+    container_name: airflow
+    ports:
+      - 8080:8080
+    volumes:
+      - ./airflow/airflow:/home/airflow
+    depends_on:
+      - postgres
+      - statsd-exporter
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  statsd-exporter:
+    image: prom/statsd-exporter
+    container_name: statsd-exporter
+    command: "--statsd.listen-udp=:8125 --web.listen-address=:9102"
+    ports:
+      - 9123:9102
+      - 8125:8125/udp
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    user: "0"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/volume:/prometheus
+
+  
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: password
+    ports:
+      - 3000:3000
+    user: "0"
+    volumes:
+     - ./grafana/volume/data:/var/lib/grafana
+     - ./grafana/volume/datasources:/etc/grafana/datasources
+     - ./grafana/volume/dashboards:/etc/grafana/dashboards

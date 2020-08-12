@@ -1,0 +1,5 @@
+airflow/airflow/*
+postgres/*
+__pycache__
+prometheus/volume/*
+grafana/volume/*
